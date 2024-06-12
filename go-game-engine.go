@@ -94,6 +94,8 @@ func (g *Game) SetActiveScene(scene string) error {
 	}
 	// Load new scene
 	g.activeScene = s.Scene
+
+	rl.SetMouseCursor(rl.MouseCursorDefault)
 	s.SceneEncapsulator.OnLoad(g, s.Scene)
 	return nil
 }
@@ -104,18 +106,17 @@ func (g *Game) AddScene(encapsulator SceneEncapsulator) {
 		Scene:             &s,
 	}
 }
-func (g *Game) ReloadScene(scene string) error {
+func (g *Game) RecreateScene(scene string) error {
 	s, ok := g.scenes[scene]
 	if !ok {
 		return fmt.Errorf("scene not loaded")
 	}
 
 	*s.Scene = s.SceneEncapsulator.SceneCreator(g)
-	s.SceneEncapsulator.OnLoad(g, s.Scene)
 	return nil
 }
 func (g *Game) ReloadCurrentScene() {
-	g.ReloadScene(g.activeScene.name)
+	g.RecreateScene(g.activeScene.name)
 }
 
 func (g *Game) GetTexture(path string) *rl.Texture2D {
