@@ -6,16 +6,13 @@ import (
 	rl "github.com/gen2brain/raylib-go/raylib"
 )
 
-var (
-	DrawRectangle = rl.DrawRectangle
-)
-
 type Game struct {
 	running      bool
 	Title        string
 	ShowHitboxes bool
 	activeScene  *Scene
 	scenes       map[string]*SceneObject
+	textures     map[string]*rl.Texture2D
 }
 
 func NewGame(title string) *Game {
@@ -24,19 +21,6 @@ func NewGame(title string) *Game {
 		Title:   title,
 		scenes:  map[string]*SceneObject{},
 	}
-}
-
-func (g *Game) GetActiveScene() *Scene {
-	return g.activeScene
-}
-
-func (g *Game) SetActiveScene(scene string) error {
-	s, ok := g.scenes[scene]
-	if !ok {
-		return fmt.Errorf("scene not loaded")
-	}
-	g.activeScene = s.Scene
-	return nil
 }
 
 func (g *Game) Init() error {
@@ -87,24 +71,58 @@ func (g *Game) Init() error {
 	return nil
 }
 
-func (g *Game) AddScene(creator SceneCreator) {
-	s := creator(g)
+// Scene
+func (g *Game) GetScene(scene string) (*Scene, bool) {
+	s, ok := g.scenes[scene]
+	if !ok {
+		return nil, false
+	}
+	return s.Scene, true
+}
+func (g *Game) GetActiveScene() *Scene {
+	return g.activeScene
+}
+func (g *Game) SetActiveScene(scene string) error {
+	s, ok := g.scenes[scene]
+	if !ok {
+		return fmt.Errorf("scene not loaded")
+	}
+	// Unload current scene
+	if g.activeScene != nil {
+		active := g.scenes[g.activeScene.name]
+		active.SceneEncapsulator.OnUnload(g, active.Scene)
+	}
+	// Load new scene
+	g.activeScene = s.Scene
+	s.SceneEncapsulator.OnLoad(g, s.Scene)
+	return nil
+}
+func (g *Game) AddScene(encapsulator SceneEncapsulator) {
+	s := encapsulator.SceneCreator(g)
 	g.scenes[s.name] = &SceneObject{
-		SceneCreator: creator,
-		Scene:        &s,
+		SceneEncapsulator: encapsulator,
+		Scene:             &s,
 	}
 }
-
 func (g *Game) ReloadScene(scene string) error {
 	s, ok := g.scenes[scene]
 	if !ok {
 		return fmt.Errorf("scene not loaded")
 	}
 
-	*s.Scene = s.SceneCreator(g)
+	*s.Scene = s.SceneEncapsulator.SceneCreator(g)
+	s.SceneEncapsulator.OnLoad(g, s.Scene)
 	return nil
 }
-
 func (g *Game) ReloadCurrentScene() {
 	g.ReloadScene(g.activeScene.name)
+}
+
+func (g *Game) GetTexture(path string) *rl.Texture2D {
+	if _, ok := g.textures[path]; !ok {
+		t := rl.LoadTexture(path)
+		g.textures[path] = &t
+	}
+
+	return g.textures[path]
 }

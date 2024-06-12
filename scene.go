@@ -21,9 +21,22 @@ func (s *Scene) SetBgColor(c rl.Color) {
 	s.bgColor = c
 }
 
-type SceneCreator func(game *Game) Scene
+func (s *Scene) GetObjectByTag(tag string) *Object {
+	for _, obj := range s.objects {
+		if obj.Tag == tag {
+			return obj
+		}
+	}
+	return nil
+}
+
+type SceneEncapsulator interface {
+	SceneCreator(game *Game) Scene
+	OnLoad(game *Game, s *Scene)
+	OnUnload(game *Game, s *Scene)
+}
 
 type SceneObject struct {
-	Scene        *Scene
-	SceneCreator SceneCreator
+	Scene             *Scene
+	SceneEncapsulator SceneEncapsulator
 }
