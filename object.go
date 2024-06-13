@@ -19,9 +19,11 @@ type Object struct {
 }
 
 func (o *Object) Update(game *Game) error {
-	for _, comp := range o.Components {
-		err := comp.OnUpdate(game)
-		if err != nil {
+	//On Update reverse order to update the last object added first
+
+	for i := len(o.Components) - 1; i >= 0; i-- {
+		comp := o.Components[i]
+		if err := comp.OnUpdate(game); err != nil {
 			return err
 		}
 	}

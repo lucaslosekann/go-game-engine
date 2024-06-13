@@ -7,12 +7,13 @@ import (
 )
 
 type Game struct {
-	running      bool
-	Title        string
-	ShowHitboxes bool
-	activeScene  *Scene
-	scenes       map[string]*SceneObject
-	textures     map[string]*rl.Texture2D
+	running         bool
+	Title           string
+	ShowHitboxes    bool
+	activeScene     *Scene
+	scenes          map[string]*SceneObject
+	textures        map[string]*rl.Texture2D
+	IsMouseConsumed bool
 }
 
 func NewGame(title string) *Game {
@@ -21,6 +22,10 @@ func NewGame(title string) *Game {
 		Title:   title,
 		scenes:  map[string]*SceneObject{},
 	}
+}
+
+func (g *Game) ConsumeMouse() {
+	g.IsMouseConsumed = true
 }
 
 func (g *Game) Init() error {
@@ -34,16 +39,20 @@ func (g *Game) Init() error {
 	g.running = true
 
 	for !rl.WindowShouldClose() && g.running {
-
+		g.IsMouseConsumed = false
 		rl.BeginDrawing()
 		rl.ClearBackground(g.activeScene.bgColor)
 
-		for i, object := range g.activeScene.objects {
+		//To have a correct layering, we need to draw the objects in the order they were added
+		//But on the update, we need to update them in the reverse order so the last object added is the first to be updated
+
+		// Update
+		for i := len(g.activeScene.objects) - 1; i >= 0; i-- {
+			object := g.activeScene.objects[i]
 			if object.Active {
 				if err := object.Update(g); err != nil {
 					return err
 				}
-
 				// Check collisions
 				if object.Collidable != nil {
 					for j := i + 1; j < len(g.activeScene.objects); j++ {
@@ -60,7 +69,11 @@ func (g *Game) Init() error {
 						}
 					}
 				}
+			}
+		}
 
+		for _, object := range g.activeScene.objects {
+			if object.Active {
 				if err := object.Draw(g); err != nil {
 					return err
 				}
