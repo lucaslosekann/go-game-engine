@@ -45,9 +45,9 @@ func (g *Game) Init() error {
 				}
 
 				// Check collisions
-				for j := i + 1; j < len(g.activeScene.objects); j++ {
-					if g.activeScene.objects[j].Active {
-						if object.Collidable != nil {
+				if object.Collidable != nil {
+					for j := i + 1; j < len(g.activeScene.objects); j++ {
+						if g.activeScene.objects[j].Active && g.activeScene.objects[j].Collidable != nil {
 							if object.Collidable.Mask.CheckCollision(g.activeScene.objects[j].Collidable.Mask) {
 								for _, onColl := range object.Collidable.onCollision {
 									onColl(g.activeScene.objects[j])
@@ -56,6 +56,7 @@ func (g *Game) Init() error {
 									onColl(object)
 								}
 							}
+
 						}
 					}
 				}
